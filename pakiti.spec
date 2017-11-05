@@ -1,32 +1,16 @@
-## github commit reference
-%global commit ff9a35f2e82bf80b143553c06e7aabe3aff0ebf8
-%global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global github_name pakiti3
-
 Summary:	Patching status monitoring tool
-Name:		pakiti
-Version:	3.0.1
+Name:		pakiti-client
+Version:	X
 Release:	1%{?dist}
-URL:		https://github.com/CESNET/pakiti3
-License:	ASL 2.0 and BSD
+URL:		https://github.com/CESNET/pakiti-client
+License:	ASL 2.0
 Group:		Applications/Internet
-Source0:	%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz
+Source0:	%{url}/archive/v%{version}.tar.gz
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	noarch
 BuildRequires:	perl
 
 %description
-Runs rpm -qa or dpkg -l on the hosts and sends results to a central server.
-
-Central server then process the results and checks whether the packages are
-installed in the recent version. Central server also provides web GUI where
-all results can be seen.
-
-%package client
-Summary:	Client for the Pakiti tool
-Group:		Applications/System
-
-%description client
 Pakiti provides a monitoring mechanism to check the patching status of
 Linux systems.
 
@@ -34,7 +18,7 @@ This package provides the client part that is able to send information
 about installed software to a defined Pakiti server.
 
 %prep
-%setup -qn %{github_name}-%{commit} 
+%setup -q
 
 %build
 make
@@ -47,13 +31,10 @@ install -D -m644 pakiti-client.1 %{buildroot}%{_mandir}/man1/pakiti-client.1
 %clean
 rm -rf %{buildroot}
 
-%files client
+%files
 %defattr(-,root,root,-)
 %{_bindir}/*
 %{_mandir}/man?/*
 
-%changelog
-* Thu May 07 2015 Lionel Cons <lionel.cons@cern.ch> - 3.0.1-1
- - Added --tag option to pakiti-client
-* Tue Dec 09 2014 Adrien Devresse <adevress at cern.ch> - 3.0.0-1
- - Initial release for pakiti 3.0.0
+#%changelog
+# See debian/changelog
