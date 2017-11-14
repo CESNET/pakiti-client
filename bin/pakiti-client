@@ -386,7 +386,6 @@ sub send_report ($) {
     $output = qx(@command "$url" 2>&1);
     if ($output =~ /$Option{expect}/ and $? == 0) {
         print(STDERR "report successfully sent\n") if -t STDERR;
-        print $output if $output;
         return;
     }
     warn($output) if $output;
