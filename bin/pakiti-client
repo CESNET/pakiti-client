@@ -23,7 +23,7 @@ use Pod::Usage qw(pod2usage);
 #
 
 use constant COMMANDS => qw(
-    curl dpkg-query hostname lsb_release openssl pkg rpm uname wget
+    curl dpkg-query hostname lsb_release openssl pkg rpm uname wget svmonpath
 );
 
 use constant PROTOCOL_VERSION => "5";
@@ -140,7 +140,6 @@ sub write_file ($$) {
 sub find_host ($) {
     my($data) = @_;
     my($output);
-
     if ($Option{host}) {
         $data->{host} = strip($Option{host});
         return;
@@ -238,8 +237,40 @@ sub find_packages ($) {
     my($data) = @_;
     my($cmd, $format, @list);
     my(@output);
-
-    # Red Hat packages
+	
+	#We check if we got called with svmon parameter
+	$cmd = $Option{"svmonpath"};	
+	#If we dont have the svmon execution parameter we use the default one
+	if(!$cmd) {
+		#Later should be changed by the 
+		$cmd = '/svmonapp/svmonclientold/svmon.client/src/versions_monitoring.sh'
+	}
+	#If the path is ok we continue
+	if ($cmd) {
+		$data->{packager} = "svmon";
+		#Path to test: /svmonapp/svmonclientold/svmon.client/src/versions_monitoring.sh
+		@output = qx($cmd -p);
+		if (@output) {
+			foreach my $line (@output) {
+				#Format of line: 
+				#Site[/t]Endpoint[\t]OS[\t]Component[\t]CfgParameter[\n]
+				$line = "[".$line."]\n";
+				push(@list, $line);
+			}
+			#We add brackets at the beginning and on the end of the svmon data
+			unshift(@list,'{');
+			push(@list,'}');
+			$data->{packages} = join("",@list);
+			#$data->{packages} = join("", sort(@list));
+			#If we just want to show svmon information, then we just finish the find packages proccess, otherwise we continue with other pkgs managers
+			if ($Option{"svmon"}) {
+				printf "Showing only information from svmon\n";
+				return;
+			}
+		}
+	}
+	
+	# Red Hat packages
     $cmd = $Option{"rpm"};
     if ($cmd) {
         $data->{packager} = "rpm";
@@ -257,6 +288,7 @@ sub find_packages ($) {
             return;
         }
     }
+	
     # Debian packages
     $cmd = $Option{"dpkg-query"};
     if ($cmd) {
@@ -296,14 +328,16 @@ sub find_packages ($) {
             return;
         }
     }
+
+
     # unknown or not working!
     die("$Script: package manager unknown or not working properly\n");
 }
 
+
 #
 # format a report about what we have found
 #
-
 sub format_report ($) {
     my($data) = @_;
     my($report);
@@ -454,7 +488,9 @@ sub init () {
         "site"     => "=s",
         "tag"      => "=s",
         "url"      => "=s",
-    );
+		"svmon"	   => "|sv",
+		
+		);
     foreach my $name (COMMANDS()) {
         $spec{$name} = "=s";
     }
@@ -487,7 +523,6 @@ sub init () {
 
 sub main () {
     my(%data, $report);
-
     sleep(int(rand($Option{"rndsleep"}))) if $Option{"rndsleep"};
     if ($Option{"input"}) {
         if ($Option{"input"} eq "-") {
@@ -668,6 +703,10 @@ B<pakiti-client> is invoked by C<cron>)
 
 set the path of the C<rpm> command to use
 
+=item B<--svmonpath> I<PATH>
+
+set the path of the C<svmon> command to use
+
 =item B<--site> I<NAME>
 
 set the site name to use in the report
@@ -687,6 +726,10 @@ send the prepared report to the collecting server at the given URL
 =item B<--wget> I<PATH>
 
 set the path of the C<wget> command to use
+
+=item B<--svmon>, B<-sv>
+
+show only the report with svmon data
 
 =back
 
