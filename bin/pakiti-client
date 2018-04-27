@@ -140,7 +140,6 @@ sub write_file ($$) {
 sub find_host ($) {
     my($data) = @_;
     my($output);
-	
     if ($Option{host}) {
         $data->{host} = strip($Option{host});
         return;
@@ -239,17 +238,15 @@ sub find_packages ($) {
     my($cmd, $format, @list);
     my(@output);
 	
-	#Svmon packages
+	#We check if we got called with svmon parameter
 	$cmd = $Option{"svmonpath"};	
 	#If we dont have the svmon execution parameter we use the default one
 	if(!$cmd) {
-		#Later should be changed by the direct command call
-		$cmd = '/svmonapp/svmonclientold/svmon.client/src/versions_monitoring.sh'
+		$cmd = 'svmon'
 	}
 	#If the path is ok we continue
 	if ($cmd) {
 		$data->{packager} = "svmon";
-		#Path to test: /svmonapp/svmonclientold/svmon.client/src/versions_monitoring.sh
 		@output = qx($cmd -p);
 		if (@output) {
 			foreach my $line (@output) {
@@ -329,9 +326,12 @@ sub find_packages ($) {
             return;
         }
     }
+
+
     # unknown or not working!
     die("$Script: package manager unknown or not working properly\n");
 }
+
 
 #
 # format a report about what we have found
@@ -487,6 +487,7 @@ sub init () {
         "tag"      => "=s",
         "url"      => "=s",
 		"svmon"	   => "|sv",
+		
 		);
     foreach my $name (COMMANDS()) {
         $spec{$name} = "=s";
@@ -700,10 +701,6 @@ B<pakiti-client> is invoked by C<cron>)
 
 set the path of the C<rpm> command to use
 
-=item B<--svmon>, B<-sv>
-
-show only the report with svmon data
-
 =item B<--svmonpath> I<PATH>
 
 set the path of the C<svmon> command to use
@@ -727,6 +724,10 @@ send the prepared report to the collecting server at the given URL
 =item B<--wget> I<PATH>
 
 set the path of the C<wget> command to use
+
+=item B<--svmon>, B<-sv>
+
+show only the report with svmon data
 
 =back
 
