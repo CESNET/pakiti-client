@@ -235,19 +235,24 @@ sub find_system ($) {
 
 sub find_packages ($) {
     my($data) = @_;
-    my($cmd, $format, @list);
+    my($cmd, $svmonPath, $format, @list);
     my(@output);
 	
 	#We check if we got called with svmon parameter
-	$cmd = $Option{"svmonpath"};	
-	#If we dont have the svmon execution parameter we use the default one
-	if(!$cmd) {
-		$cmd = 'svmon'
-	}
-	#If the path is ok we continue
+	$cmd = $Option{"svmon"};	
+	$svmonPath = $Option{"svmonpath"};
+	
+	#Svmon called with svmon parameter
 	if ($cmd) {
 		$data->{packager} = "svmon";
-		@output = qx($cmd -p);
+		#If we have a predefined path for svmon we use it 
+		if($svmonPath){
+			@output = qx($svmonPath -p);
+		}		
+		else{
+			#Otherwise we call the svmon default command
+			@output = qx("svmon" -p);
+		}
 		if (@output) {
 			foreach my $line (@output) {
 				#Format of line: 
@@ -259,12 +264,7 @@ sub find_packages ($) {
 			unshift(@list,'{');
 			push(@list,'}');
 			$data->{packages} = join("",@list);
-			#$data->{packages} = join("", sort(@list));
-			#If we just want to show svmon information, then we just finish the find packages proccess, otherwise we continue with other pkgs managers
-			if ($Option{"svmon"}) {
-				printf "Showing only information from svmon\n";
-				return;
-			}
+			return;
 		}
 	}
 	
@@ -414,7 +414,7 @@ sub send_report ($) {
     push(@pairs, "protocol=" . PROTOCOL_VERSION) if !$Option{"no-protocol-version"};
 
     $url = "$Option{url}";
-    $url = $url . '?' . join('&', @pairs) if @pairs;
+    #$url = $url . '?' . join('&', @pairs) if @pairs;
     ## no critic 'InputOutput::ProhibitBacktickOperators'
     $output = qx(@command "$url" 2>&1);
     if ($output =~ /$Option{expect}$/ and $? == 0) {
