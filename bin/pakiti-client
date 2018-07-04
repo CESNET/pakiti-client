@@ -238,29 +238,29 @@ sub find_packages ($) {
     my($cmd, $svmonPath, $format, @list);
     my(@output);
 	
-	#We check if we got called with svmon parameter
+    #We check if we got called with svmon parameter
 	$cmd = $Option{"svmon"};	
 	$svmonPath = $Option{"svmonpath"};
 	
-	#Svmon called with svmon parameter
+    #Svmon called with svmon parameter
 	if ($cmd) {
 		$data->{packager} = "svmon";
-		#If we have a predefined path for svmon we use it 
+        #If we have a predefined path for svmon we use it 
 		if($svmonPath){
 			@output = qx($svmonPath -p);
 		}		
 		else{
-			#Otherwise we call the svmon default command
+            #Otherwise we call the svmon default command
 			@output = qx("svmon" -p);
 		}
 		if (@output) {
 			foreach my $line (@output) {
-				#Format of line: 
-				#Site[/t]Endpoint[\t]OS[\t]Component[\t]CfgParameter[\n]
+                #Format of line: 
+                #Site[/t]Endpoint[\t]OS[\t]Component[\t]CfgParameter[\n]
 				$line = "[".$line."]\n";
 				push(@list, $line);
 			}
-			#We add brackets at the beginning and on the end of the svmon data
+            #We add brackets at the beginning and on the end of the svmon data
 			unshift(@list,'{');
 			push(@list,'}');
 			$data->{packages} = join("",@list);
@@ -268,7 +268,7 @@ sub find_packages ($) {
 		}
 	}
 	
-	# Red Hat packages
+    # Red Hat packages
     $cmd = $Option{"rpm"};
     if ($cmd) {
         $data->{packager} = "rpm";
