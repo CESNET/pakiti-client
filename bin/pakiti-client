@@ -23,7 +23,7 @@ use Pod::Usage qw(pod2usage);
 #
 
 use constant COMMANDS => qw(
-    curl dpkg-query hostname lsb_release openssl pkg rpm uname wget svmonpath
+    curl dpkg-query hostname lsb_release openssl pkg rpm svmonpath uname wget 
 );
 
 use constant PROTOCOL_VERSION => "5";
@@ -486,7 +486,7 @@ sub init () {
         "site"     => "=s",
         "tag"      => "=s",
         "url"      => "=s",
-		"svmon"	   => "|sv",
+		"svmon"	   => "|s",
 		
 		);
     foreach my $name (COMMANDS()) {
@@ -725,7 +725,7 @@ send the prepared report to the collecting server at the given URL
 
 set the path of the C<wget> command to use
 
-=item B<--svmon>, B<-sv>
+=item B<--svmon>, B<-s>
 
 show only the report with svmon data
 
