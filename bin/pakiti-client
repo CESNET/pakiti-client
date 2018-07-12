@@ -240,8 +240,7 @@ sub find_packages ($) {
     my(@output);
 	
     #The user wants to send svmon data
-    $cmd = $Option{"svmonreport"};
-    if ($cmd) {
+    if ($Option{"svmonreport"}) {
         $cmd = $Option{"svmon"};
         $data->{packager} = "svmon";
         @output = qx($cmd -p) or die("$Script: No svmon found on path $cmd\n");
@@ -473,7 +472,7 @@ sub init () {
         "rndsleep" => "|r=i",
         "site"     => "=s",
         "svmonreport" => "|s",
-        "svmon" => "=s",
+        "svmon"    => "=s",
         "tag"      => "=s",
         "url"      => "=s",
     );
@@ -696,7 +695,7 @@ set the site name to use in the report
 
 =item B<--svmonreport>, B<-s>
 
-show only the report with svmon data
+show only the report with svmon data, SVMON collects the information on software versions of EUDAT services and their components installed in EUDAT CDI
 
 =item B<--svmon> I<PATH>
 
