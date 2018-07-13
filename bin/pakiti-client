@@ -241,9 +241,9 @@ sub find_packages ($) {
 	
     #The user wants to send svmon data
     if ($Option{"svmonreport"}) {
-        $cmd = $Option{"svmon"};
+        $cmd = $Option{"svmon"} or die("the svmon command is not available");
         $data->{packager} = "svmon";
-        @output = qx($cmd -p) or die("$Script: No svmon found on path $cmd\n");
+        @output = qx($cmd -p) or die("$Script: Failed to execute the command $cmd\n");
         if (@output) {
             foreach my $line (@output) {
                 #Format of line: 
