@@ -23,7 +23,7 @@ use Pod::Usage qw(pod2usage);
 #
 
 use constant COMMANDS => qw(
-    curl dpkg-query hostname lsb_release openssl pkg rpm uname wget
+    curl dpkg-query hostname lsb_release openssl pkg rpm svmon uname wget
 );
 
 use constant PROTOCOL_VERSION => "5";
@@ -238,6 +238,25 @@ sub find_packages ($) {
     my($data) = @_;
     my($cmd, $format, @list);
     my(@output);
+	
+    #The user wants to send svmon data
+    if ($Option{"svmonreport"}) {
+        $cmd = $Option{"svmon"} or die("the svmon command is not available");
+        $data->{packager} = "svmon";
+        @output = qx($cmd -p) or die("$Script: Failed to execute the command $cmd\n");
+        if (@output) {
+            foreach my $line (@output) {
+                #Format of line: 
+                #Site[/t]Endpoint[\t]OS[\t]Component[\t]CfgParameter[\n]
+                $line = "[".$line."]\n";
+                push(@list, $line);
+            }
+            unshift(@list,'{');
+            push(@list,'}');
+            $data->{packages} = join("",@list);
+        }
+        return;
+    } 
 
     # Red Hat packages
     $cmd = $Option{"rpm"};
@@ -452,6 +471,7 @@ sub init () {
         "output"   => "|o=s",
         "rndsleep" => "|r=i",
         "site"     => "=s",
+        "svmonreport" => "|s",
         "tag"      => "=s",
         "url"      => "=s",
     );
@@ -671,6 +691,14 @@ set the path of the C<rpm> command to use
 =item B<--site> I<NAME>
 
 set the site name to use in the report
+
+=item B<--svmonreport>, B<-s>
+
+show only the report with svmon data, SVMON collects the information on software versions of EUDAT services and their components installed in EUDAT CDI
+
+=item B<--svmon> I<PATH>
+
+set the path of the C<svmon> command to use
 
 =item B<--tag> I<STRING>
 
