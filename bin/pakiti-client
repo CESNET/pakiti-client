@@ -380,8 +380,7 @@ sub send_report ($) {
     write_file($data, $report);
     if ($Option{curl}) {
         @command = ($Option{curl});
-        push(@command, qw(-q --silent -X POST));
-        push(@command, qw(--include --show-error)) if $Option{debug};
+        push(@command, qw(-q --include --silent --show-error -X POST));
         push(@command, "--data-binary", "\@" . $data);
     } elsif ($Option{wget}) {
         @command = ($Option{wget});
@@ -404,9 +403,8 @@ sub send_report ($) {
     $url = $url . '?' . join('&', @pairs) if @pairs;
     ## no critic 'InputOutput::ProhibitBacktickOperators'
     $output = qx(@command "$url" 2>&1);
-    if ($output =~ /$Option{expect}$/ and $? == 0) {
+    if ($output =~ /$Option{expect}/ and $? == 0) {
         print(STDERR "report successfully sent\n") if -t STDERR;
-        print $output if $output;
         return;
     }
     warn($output) if $output;
