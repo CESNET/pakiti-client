@@ -9,7 +9,7 @@ Homepage: https://github.com/CESNET/pakiti3
 
 Package: pakiti-client
 Architecture: all
-Depends: ${misc:Depends}, curl, openssl, perl
+Depends: ${misc:Depends}, openssl, perl, liblwp-protocol-https-perl
 Description: Patch Status Monitoring Tool
  Pakiti provides a monitoring mechanism to check the patching status of
  Linux systems.

@@ -9,6 +9,7 @@ Source0:	%{url}/archive/v%{version}.tar.gz
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	noarch
 BuildRequires:	perl
+Requires:	openssl perl perl-LWP-Protocol-https
 
 %description
 Pakiti provides a monitoring mechanism to check the patching status of

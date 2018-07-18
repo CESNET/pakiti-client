@@ -17,13 +17,14 @@ use File::Temp qw(tempdir);
 use FindBin qw($Bin $Script);
 use Getopt::Long qw(GetOptions);
 use Pod::Usage qw(pod2usage);
+use LWP::UserAgent ();
 
 #
 # constants
 #
 
 use constant COMMANDS => qw(
-    curl dpkg-query hostname lsb_release openssl pkg rpm svmon uname wget
+    dpkg-query hostname lsb_release openssl pkg rpm svmon uname
 );
 
 use constant PROTOCOL_VERSION => "5";
@@ -373,24 +374,8 @@ sub encrypt_report ($) {
 
 sub send_report ($) {
     my($report) = @_;
-    my($data, @command, $output, $url, @pairs);
+    my($response, $url, @pairs, $ua);
 
-    $TempDir ||= tempdir(CLEANUP => 1);
-    $data = "$TempDir/data";
-    write_file($data, $report);
-    if ($Option{curl}) {
-        @command = ($Option{curl});
-        push(@command, qw(-q --silent -X POST));
-        push(@command, qw(--include --show-error)) if $Option{debug};
-        push(@command, "--data-binary", "\@" . $data);
-    } elsif ($Option{wget}) {
-        @command = ($Option{wget});
-        push(@command, qw(--tries=1 --output-document=-));
-        push(@command, qw(--server-response)) if $Option{debug};
-        push(@command, "--post-file", $data);
-    } else {
-        die("$Script: cannot send to $Option{url}: curl/wget not installed\n");
-    }
     # The caller may specify additional information that doesn't describe the
     # actual patch state but may be useful for the processing. Options recognized
     # as such are sent in the query string.
@@ -402,15 +387,15 @@ sub send_report ($) {
 
     $url = "$Option{url}";
     $url = $url . '?' . join('&', @pairs) if @pairs;
-    ## no critic 'InputOutput::ProhibitBacktickOperators'
-    $output = qx(@command "$url" 2>&1);
-    if ($output =~ /$Option{expect}$/ and $? == 0) {
-        print(STDERR "report successfully sent\n") if -t STDERR;
-        print $output if $output;
-        return;
-    }
-    warn($output) if $output;
-    die("$Script: failed to send data using $command[0]\n");
+
+    $ua = LWP::UserAgent->new;
+    push @{$ua->requests_redirectable}, 'POST';
+
+    $response = $ua->post($url, Content => $report);
+    $response->is_success or die($response->status_line);
+
+    print(STDERR "report successfully sent\n") if -t STDERR;
+    print $response->decoded_content;
 }
 
 #
@@ -459,9 +444,7 @@ sub init () {
     $| = 1;
     %spec = (
         "config"   => "|conf=s",
-        "debug"    => "|d",
         "encrypt"  => "=s",
-        "expect"   => "=s",
         "help"     => "|h|?",
         "host"     => "=s",
         "input"    => "|i=s",
@@ -494,11 +477,8 @@ sub init () {
     foreach my $name (COMMANDS()) {
         $Option{$name} = which($name) unless defined($Option{$name});
     }
-    $Option{expect} = "OK" unless defined($Option{expect});
     die("$Script: option --encrypt requires openssl\n")
         if $Option{encrypt} and not $Option{openssl};
-    die("$Script: option --url requires curl or wget\n")
-        if $Option{url} and not $Option{curl} and not $Option{wget};
 }
 
 #
@@ -611,14 +591,6 @@ with (using bash):
 
 use this configuration file before processing the command line parameters
 
-=item B<--curl> I<PATH>
-
-set the path of the C<curl> command to use
-
-=item B<--debug>, B<-d>
-
-enable debug mode
-
 =item B<--dpkg-query> I<PATH>
 
 set the path of the C<dpkg-query> command to use
@@ -628,11 +600,6 @@ set the path of the C<dpkg-query> command to use
 use this certificate to encrypt the report; the value can either be the path
 of the file containing the certificate or the certificate itself as multi-line
 ASCII armored contents
-
-=item B<--expect> I<STRING>
-
-set the response string to expect from the server in case of success
-(default: C<OK>)
 
 =item B<--help>, B<-h>, B<-?>
 
@@ -712,10 +679,6 @@ set the path of the C<uname> command to use
 
 send the prepared report to the collecting server at the given URL
 
-=item B<--wget> I<PATH>
-
-set the path of the C<wget> command to use
-
 =back
 
 =head1 CONFIGURATION FILE
@@ -776,6 +739,20 @@ section for the list of all possible header names.
 A I<package line> contains the package name, a tab character (0x09), the package
 full version, another tab and the package architecture. For C<rpm> based systems,
 the full version is in fact I<EPOCH>:I<VERSION>:I<RELEASE>.
+
+=head1 PROTOCOL
+
+The messages are sent using the HTTP protocol and the POST method. The
+messages are sent over an TLS-protected channel unless the report is sent as
+an encrypted blob, in which case a plain HTTP connection is recommended to
+use. Messages containing the encrypted blob are label using the
+application/octet-stream mime type. The server uses HTTP codes to signal the
+status of delivery. Servers may return human-readable information
+in the body of HTTP response, which provides additional details about the
+processing.
+
+The client can use query string attributes to pass additional parameters
+important for the processing.
 
 =head1 AUTHOR
 
