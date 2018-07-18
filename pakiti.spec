@@ -26,7 +26,7 @@ make
 
 %install
 rm -rf %{buildroot}
-install -D -m755 bin/pakiti-client   %{buildroot}%{_bindir}/pakiti-client
+install -D -m755 pakiti-client   %{buildroot}%{_bindir}/pakiti-client
 install -D -m644 pakiti-client.1 %{buildroot}%{_mandir}/man1/pakiti-client.1
 
 %clean
