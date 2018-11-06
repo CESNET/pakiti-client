@@ -388,8 +388,12 @@ sub send_report ($) {
     $url = "$Option{url}";
     $url = $url . '?' . join('&', @pairs) if @pairs;
 
-    $ua = LWP::UserAgent->new;
+    $ua = LWP::UserAgent->new();
     push @{$ua->requests_redirectable}, 'POST';
+
+    if ($Option{"disable-tls-checks"}) {
+        $ua->ssl_opts(verify_hostname => 0, SSL_verify_mode => 0x00);
+    }
 
     $response = $ua->post($url, Content => $report);
     $response->is_success or die($response->status_line);
@@ -445,6 +449,7 @@ sub init () {
     %spec = (
         "config"   => "|conf=s",
         "encrypt"  => "=s",
+        "disable-tls-checks" => "",
         "help"     => "|h|?",
         "host"     => "=s",
         "input"    => "|i=s",
@@ -590,6 +595,10 @@ with (using bash):
 =item B<--config>, B<--conf> I<PATH>
 
 use this configuration file before processing the command line parameters
+
+=item B<--disable-tls-checks>
+
+disable the verification of server certificate when sending reports over https
 
 =item B<--dpkg-query> I<PATH>
 
