@@ -184,14 +184,11 @@ sub find_system ($) {
             return;
         }
     }
-    $path = "/etc/debian_version";
-    if (-f $path) {
-        $data->{system} = read_file1("/etc/issue.net");
-        return;
-    }
-    $path = "/etc/devuan_version";
-    if (-f $path) {
-        $data->{system} = read_file1("/etc/issue.net");
+    if (-f "/etc/os-release") {
+        $_ = read_file("/etc/os-release");
+        $_ =~ s/"//g;
+        my %os_release = map{split /=/, $_}(split /\n/, $_);
+        $data->{system} = "$os_release{NAME} $os_release{VERSION_ID}";
         return;
     }
     $path = "/etc/SuSE-release";
