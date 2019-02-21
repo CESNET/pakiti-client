@@ -498,6 +498,35 @@ sub main () {
         } else {
             $report = read_file($Option{"input"});
         }
+        if ($Option{"site"}) {
+            my $rep = "";
+            my $site_recorded = 0;
+            my @lines = split /\n/, $report;
+            my $hashes = 0;
+            foreach my $line (@lines) {
+                my $tmp;
+                if ($line eq "#") {
+                    $hashes++;
+                    if ($hashes == 2) {
+                        if (! $site_recorded) {
+                            $tmp = sprintf("site: %s\n", $Option{"site"});
+                            $rep .= $tmp;
+                        }
+                    }
+                }
+                if ($hashes == 1) {
+                    my @header = split /:/, $line;
+                    if ($header[0] eq "site") {
+                        $tmp = sprintf("site: %s\n", $Option{"site"});
+                        $rep .= $tmp;
+                        $site_recorded = 1;
+                        next;
+                    }
+                }
+                $rep .= $line . "\n";
+            }
+            $report = $rep;
+        }
     } else {
         $data{version} = 1;
         $data{site} = strip($Option{"site"}) if $Option{"site"};
