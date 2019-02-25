@@ -1,3 +1,10 @@
+pakiti (3.0.3) stable; urgency=medium
+
+  * Improve selection of package manager
+  * Change detecting OS from issue.net to os-release file
+
+ -- Michal Svamberg <svamberg@civ.zcu.cz>  Mon, 25 Feb 2019 10:01:34 +0100
+
 pakiti (3.0.2) stable; urgency=medium
 
   * Support for installations with multiple package managers
