@@ -170,7 +170,7 @@ sub find_host ($) {
 
 sub find_system ($) {
     my($data) = @_;
-    my($path, $output, @list);
+    my($path, $output, @list, %os_release);
 
     # running kernel
     if ($Option{uname}) {
@@ -187,8 +187,16 @@ sub find_system ($) {
     if (-f "/etc/os-release") {
         $_ = read_file("/etc/os-release");
         $_ =~ s/"//g;
-        my %os_release = map{split /=/, $_}(split /\n/, $_);
-        $data->{system} = "$os_release{NAME} $os_release{VERSION_ID}";
+        %os_release = map{split /=/, $_}(split /\n/, $_);
+	if ($os_release{PRETTY_NAME} ne "") {
+		$data->{system} = "$os_release{PRETTY_NAME}";
+		return;
+	}
+	if ($os_release{VERSION_ID}) {
+	        $data->{system} = "$os_release{NAME} $os_release{VERSION_ID}";
+	} else {
+	        $data->{system} = "$os_release{NAME}";
+	}
         return;
     }
     $path = "/etc/SuSE-release";
