@@ -1,3 +1,9 @@
+pakiti (3.0.4) stable; urgency=medium
+
+  * Fix uninitialized value on Debian/Sid
+
+ -- Michal Svamberg <svamberg@civ.zcu.cz>  Mon, 25 Feb 2019 10:43:58 +0100
+
 pakiti (3.0.3) stable; urgency=medium
 
   * Improve selection of package manager
