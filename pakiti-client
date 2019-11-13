@@ -419,8 +419,10 @@ sub parse ($$) {
             next if $line =~ /^\s*\#/;
             if ($line =~ /^\s*(\w+)\s*=\s*(.*?)\s*$/) {
                 ($name, $value) = ($1, $2);
-                die("$Script: unexpected configuration option: $name\n")
-                    unless $spec->{$name};
+                if (! $spec->{$name}) {
+                    warn("$Script: unexpected configuration option: $name\n");
+                    next;
+                }
                 if ($value =~ /^<<(\w+)$/) {
                     $tag = $1;
                     $Option{$name} = "";
@@ -428,7 +430,7 @@ sub parse ($$) {
                     $Option{$name} = $value;
                 }
             } else {
-                die("$Script: unexpected configuration line: $line\n");
+                warn("$Script: unexpected configuration line: $line\n");
             }
         }
     }
