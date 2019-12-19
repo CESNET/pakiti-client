@@ -386,6 +386,9 @@ sub send_report ($) {
     $url = $url . '?' . join('&', @pairs) if @pairs;
 
     $ua = LWP::UserAgent->new();
+    if ($Option{'bind-address'}) {
+	$ua->local_address($Option{'bind-address'});
+    }
     push @{$ua->requests_redirectable}, 'POST';
 
     if ($Option{"disable-tls-checks"}) {
@@ -446,6 +449,7 @@ sub init () {
 
     $| = 1;
     %spec = (
+	"bind-address" => "=s",
         "config"   => "|conf=s",
         "encrypt"  => "=s",
         "disable-tls-checks" => "",
@@ -619,6 +623,11 @@ with (using bash):
 =head1 OPTIONS
 
 =over
+
+=item B<--bind-address> I<ADDRESS>
+
+bind to this local address for the outgoing connection; useful for fulfilling
+firewall rules and for uniquely identifying the host
 
 =item B<--config>, B<--conf> I<PATH>
 
