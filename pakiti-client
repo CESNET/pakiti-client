@@ -381,6 +381,7 @@ sub https {
         }
         if ($body =~ m/200 OK/) {
             print(STDERR "report successfully sent\n") if -t STDERR;
+            print "OK\n";
         } else {
 	    die($body);
         }
