@@ -371,19 +371,18 @@ sub encrypt_report ($) {
 sub https {
     my ($url, $report) = @_;
     my($ua, $response);
-    my($code,$body);
     eval { require LWP::UserAgent; LWP::UserAgent->import; };
     if ($@) {
-	if ($Option{"disable-tls-checks"}) {
-            ($code,$body) = `curl -sik -X POST $url -d "$report"` =~m{\A\S+ (\d+) .*?\r?\n\r?\n(.*)}s;
+        if ($Option{"disable-tls-checks"}) {
+            $response = `curl -sik -o /dev/null -w "%{http_code}" -X POST $url -d "$report"`;
         } else {
-            ($code,$body) = `curl -si -X POST $url -d "$report"` =~m{\A\S+ (\d+) .*?\r?\n\r?\n(.*)}s;
+            $response = `curl -si -o /dev/null -w "%{http_code}" -X POST $url -d "$report"`;
         }
-        if ($body =~ m/200 OK/) {
+        if ($response == "200") {
             print(STDERR "report successfully sent\n") if -t STDERR;
             print "OK\n";
         } else {
-	    die($body);
+            die($response);
         }
     } else {
         my $ua = LWP::UserAgent->new();
