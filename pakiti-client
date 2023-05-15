@@ -374,16 +374,14 @@ sub https {
     eval { require LWP::UserAgent; LWP::UserAgent->import; };
     if ($@) {
         if ($Option{"disable-tls-checks"}) {
-            $response = `curl -sik -o /dev/null -w "%{http_code}" -X POST $url -d "$report"`;
+            $response = `curl -sqk -X POST $url -d "$report"`;
         } else {
-            $response = `curl -si -o /dev/null -w "%{http_code}" -X POST $url -d "$report"`;
+            $response = `curl -sq -X POST $url -d "$report"`;
         }
-        if ($response == "200") {
-            print(STDERR "report successfully sent\n") if -t STDERR;
-            print "OK\n";
-        } else {
-            die($response);
-        }
+        ($response =~ /OK$/) or die($response);
+
+        print(STDERR "report successfully sent\n") if -t STDERR;
+        print($response);
     } else {
         my $ua = LWP::UserAgent->new();
         push @{$ua->requests_redirectable}, 'POST';
