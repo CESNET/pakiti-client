@@ -378,7 +378,8 @@ sub https {
         } else {
             $response = `curl -sq -X POST $url -d "$report"`;
         }
-        ($response =~ /OK$/) or die($response);
+        $ec = $? >> 8;
+        ($response =~ /OK$/) or die("Error: ".$ec);
 
         print(STDERR "report successfully sent\n") if -t STDERR;
         print($response);
