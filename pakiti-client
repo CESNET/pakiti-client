@@ -177,6 +177,9 @@ sub find_system ($) {
         $data->{kernel} = output1($Option{uname}, "-r");
         $data->{arch} = output1($Option{uname}, "-m");
     }
+    if (-f "/proc/cpuinfo") {
+        $data->{cpu} = output1("grep", "\"model name\"", "/proc/cpuinfo", "|", "sort", "-u", "|", "awk", "-F", "\":\"" ,"\'{print\$2}\'");
+    }
     # known distributions
     foreach my $release (qw(/etc/redhat-release /etc/fedora-release)) {
         if (-f $release) {
