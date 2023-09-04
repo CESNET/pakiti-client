@@ -17,7 +17,6 @@ use File::Temp qw(tempdir);
 use FindBin qw($Bin $Script);
 use Getopt::Long qw(GetOptions);
 use Pod::Usage qw(pod2usage);
-use LWP::UserAgent ();
 
 #
 # constants
@@ -372,9 +371,40 @@ sub encrypt_report ($) {
 # send a formatted report
 #
 
+sub https {
+    my ($url, $report) = @_;
+    my($ua, $response);
+    eval { require LWP::UserAgent; LWP::UserAgent->import; };
+    if ($@) {
+        if ($Option{"disable-tls-checks"}) {
+            $response = `curl -sqk -X POST $url -d "$report"`;
+        } else {
+            $response = `curl -sq -X POST $url -d "$report"`;
+        }
+        $ec = $? >> 8;
+        ($response =~ /OK$/) or die("Error: ".$ec);
+
+        print(STDERR "report successfully sent\n") if -t STDERR;
+        print($response);
+    } else {
+        my $ua = LWP::UserAgent->new();
+        push @{$ua->requests_redirectable}, 'POST';
+
+        if ($Option{"disable-tls-checks"}) {
+            $ua->ssl_opts(verify_hostname => 0, SSL_verify_mode => 0x00);
+        }
+
+        $response = $ua->post($url, Content => $report);
+        $response->is_success or die($response->status_line);
+
+        print(STDERR "report successfully sent\n") if -t STDERR;
+        print $response->decoded_content;
+    }
+}
+
 sub send_report ($) {
     my($report) = @_;
-    my($response, $url, @pairs, $ua);
+    my($url, @pairs);
 
     # The caller may specify additional information that doesn't describe the
     # actual patch state but may be useful for the processing. Options recognized
@@ -388,18 +418,7 @@ sub send_report ($) {
     $url = "$Option{url}";
     $url = $url . '?' . join('&', @pairs) if @pairs;
 
-    $ua = LWP::UserAgent->new();
-    push @{$ua->requests_redirectable}, 'POST';
-
-    if ($Option{"disable-tls-checks"}) {
-        $ua->ssl_opts(verify_hostname => 0, SSL_verify_mode => 0x00);
-    }
-
-    $response = $ua->post($url, Content => $report);
-    $response->is_success or die($response->status_line);
-
-    print(STDERR "report successfully sent\n") if -t STDERR;
-    print $response->decoded_content;
+    https ($url, $report);
 }
 
 #
