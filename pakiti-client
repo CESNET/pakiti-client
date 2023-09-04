@@ -169,7 +169,7 @@ sub find_host ($) {
 
 sub find_system ($) {
     my($data) = @_;
-    my($path, $output, @list);
+    my($path, $output, @list, %os_release);
 
     # running kernel
     if ($Option{uname}) {
@@ -189,8 +189,16 @@ sub find_system ($) {
     if (-f "/etc/os-release") {
         $_ = read_file("/etc/os-release");
         $_ =~ s/"//g;
-        my %os_release = map{split /=/, $_}(split /\n/, $_);
-        $data->{system} = "$os_release{NAME} $os_release{VERSION_ID}";
+        %os_release = map{split /=/, $_}(split /\n/, $_);
+	if ($os_release{PRETTY_NAME} ne "") {
+		$data->{system} = "$os_release{PRETTY_NAME}";
+		return;
+	}
+	if ($os_release{VERSION_ID}) {
+	        $data->{system} = "$os_release{NAME} $os_release{VERSION_ID}";
+	} else {
+	        $data->{system} = "$os_release{NAME}";
+	}
         return;
     }
     $path = "/etc/SuSE-release";
@@ -265,16 +273,16 @@ sub find_packages ($) {
         $format = "%{NAME}\t%{EPOCH}:%{VERSION}-%{RELEASE}\t%{ARCH}";
         ## no critic 'InputOutput::ProhibitBacktickOperators'
         @output = qx($cmd -qa --queryformat "$format\n");
-        return if $?;
-
-        if (@output) {
-            foreach my $line (@output) {
-                $line =~ s{\t\(none\):}{\t0:}g;
-                push(@list, $line) unless $line =~ /^gpg-pubkey\t/;
-            }
-            $data->{packages} = join("", sort(@list));
-            return;
-        }
+        if ($? == 0) {
+			if (@output) {
+				foreach my $line (@output) {
+				$line =~ s{\t\(none\):}{\t0:}g;
+				push(@list, $line) unless $line =~ /^gpg-pubkey\t/;
+				}
+				$data->{packages} = join("", sort(@list));
+				return;
+			}
+		}
     }
     # Debian packages
     $cmd = $Option{"dpkg-query"};
@@ -284,18 +292,18 @@ sub find_packages ($) {
                           qw(Status Package Version Architecture));
         ## no critic 'InputOutput::ProhibitBacktickOperators'
         @output = qx($cmd -W --showformat="$format\n");
-        return if $?;
-
-        if (@output) {
-            foreach my $line (@output) {
-                if ($line =~ /^install ok installed/) {
-                    $line =~ s{^.+?=}{}g;
-                    push(@list, $line);
-                }
-            }
-            $data->{packages} = join("", sort(@list));
-            return;
-        }
+        if ($? == 0) {
+			if (@output) {
+				foreach my $line (@output) {
+					if ($line =~ /^install ok installed/) {
+						$line =~ s{^.+?=}{}g;
+						push(@list, $line);
+					}
+				}
+				$data->{packages} = join("", sort(@list));
+				return;
+			}
+		}
     }
     # OpenBSD (pkg) or FreeBSD (pkgng) packages
     $cmd = $Option{"pkg"};
@@ -303,17 +311,17 @@ sub find_packages ($) {
         $data->{packager} = "pkg";
         ## no critic 'InputOutput::ProhibitBacktickOperators'
         @output = qx($cmd info);
-        return if $?;
-
-        if (@output) {
-            foreach my $line (@output) {
-                $line =~ s{\s+.*$}{};
-                $line =~ s{-([0-9])}{\t$1};
-                push(@list, "$line\t$data->{arch}\n");
-            }
-            $data->{packages} = join("", sort(@list));
-            return;
-        }
+        if ($? == 0) {
+			if (@output) {
+				foreach my $line (@output) {
+					$line =~ s{\s+.*$}{};
+					$line =~ s{-([0-9])}{\t$1};
+					push(@list, "$line\t$data->{arch}\n");
+				}
+				$data->{packages} = join("", sort(@list));
+				return;
+			}
+		}
     }
     # unknown or not working!
     die("$Script: package manager unknown or not working properly\n");

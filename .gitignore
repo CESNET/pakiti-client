@@ -1,0 +1,7 @@
+debian/debhelper-build-stamp
+debian/files
+debian/pakiti-client.debhelper.log
+debian/pakiti-client.substvars
+debian/pakiti-client/
+pakiti-client.1
+
