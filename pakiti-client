@@ -373,7 +373,7 @@ sub encrypt_report ($) {
 
 sub https {
     my ($url, $report) = @_;
-    my($ua, $response);
+    my($ua, $response, $ec);
     eval { require LWP::UserAgent; LWP::UserAgent->import; };
     if ($@) {
         if ($Option{"disable-tls-checks"}) {
