@@ -14,7 +14,7 @@
 use strict;
 use warnings qw(FATAL all);
 use File::Temp qw(tempdir);
-use FindBin qw($Bin $Script);
+my $Script="pakiti-client";
 use Getopt::Long qw(GetOptions);
 use Pod::Usage qw(pod2usage);
 
