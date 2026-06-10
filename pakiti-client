@@ -238,7 +238,7 @@ sub find_packages ($) {
     my($data) = @_;
     my($cmd, $format, @list);
     my(@output);
-	
+
     #The user wants to send svmon data
     if ($Option{"svmonreport"}) {
         $cmd = $Option{"svmon"} or die("the svmon command is not available");
@@ -372,8 +372,8 @@ sub encrypt_report ($) {
 #
 
 sub https {
-    my ($url, $report) = @_;
-    my($ua, $response, $ec);
+    my($url, $report) = @_;
+    my($response);
     eval { require LWP::UserAgent; LWP::UserAgent->import; };
     if ($@) {
         if ($Option{"disable-tls-checks"}) {
@@ -381,11 +381,11 @@ sub https {
         } else {
             $response = `curl -sq -X POST $url -d "$report"`;
         }
-        $ec = $? >> 8;
-        ($response =~ /OK$/) or die("Error: ".$ec);
+        my $ec = $? >> 8;
+        die("Error: ".$ec) if ($ec != 0);
 
         print(STDERR "report successfully sent\n") if -t STDERR;
-        print($response);
+        return($response);
     } else {
         my $ua = LWP::UserAgent->new();
         push @{$ua->requests_redirectable}, 'POST';
@@ -395,16 +395,17 @@ sub https {
         }
 
         $response = $ua->post($url, Content => $report);
-        $response->is_success or die($response->status_line);
+        die($response->status_line) if (!$response->is_success);
 
         print(STDERR "report successfully sent\n") if -t STDERR;
-        print $response->decoded_content;
+        return($response->decoded_content);
     }
 }
 
 sub send_report ($) {
     my($report) = @_;
     my($url, @pairs);
+    my($response);
 
     # The caller may specify additional information that doesn't describe the
     # actual patch state but may be useful for the processing. Options recognized
@@ -418,7 +419,10 @@ sub send_report ($) {
     $url = "$Option{url}";
     $url = $url . '?' . join('&', @pairs) if @pairs;
 
-    https ($url, $report);
+    $response = https($url, $report);
+    print($response)
+        if -t STDOUT or ($response !~ /^OK$/);
+    return($response =~ /OK$/);
 }
 
 #
@@ -574,8 +578,9 @@ sub main () {
                 if -t STDERR;
         }
     }
-    send_report($report)
-        if $Option{"url"};
+    if ($Option{"url"}) {
+        send_report($report) or exit 1;
+    }
 }
 
 #
