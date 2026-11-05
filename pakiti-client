@@ -231,13 +231,27 @@ sub find_system ($) {
 }
 
 #
+# paths of the running kernel, used to find the installed packages owning it, so that
+# the server can tell them apart from kernel packages which are installed but not running
+#
+
+sub running_kernel_paths ($) {
+    my($kernel) = @_;
+
+    return() unless defined($kernel) and $kernel =~ /^[\w.+~-]+$/;
+    # e.g. containers do not have the kernel installed at all
+    return(grep(-e $_, "/lib/modules/$kernel", "/usr/lib/modules/$kernel",
+                "/lib/modules/$kernel/vmlinuz", "/boot/vmlinuz-$kernel"));
+}
+
+#
 # find the list of installed packages
 #
 
 sub find_packages ($) {
     my($data) = @_;
     my($cmd, $format, @list);
-    my(@output);
+    my(@output, @paths, %owners, %running);
 	
     #The user wants to send svmon data
     if ($Option{"svmonreport"}) {
@@ -273,6 +287,15 @@ sub find_packages ($) {
                 push(@list, $line) unless $line =~ /^gpg-pubkey\t/;
             }
             $data->{packages} = join("", sort(@list));
+            @paths = running_kernel_paths($data->{kernel});
+            if (@paths) {
+                # the exit code is ignored, some paths may not be owned by any package
+                foreach my $line (qx($cmd -qf --queryformat "$format\n" @paths 2>/dev/null)) {
+                    $line =~ s{\t\(none\):}{\t0:}g;
+                    $running{"$1 $2 $3"} = 1 if $line =~ /^(\S+)\t(\S+)\t(\S+)$/;
+                }
+            }
+            $data->{"running-kernel-pkgs"} = join(";", sort(keys(%running))) if %running;
             return;
         }
     }
@@ -287,13 +310,30 @@ sub find_packages ($) {
         return if $?;
 
         if (@output) {
+            # names of the packages owning the running kernel, output: "pkg1, pkg2:amd64: /path"
+            @paths = running_kernel_paths($data->{kernel});
+            if (@paths) {
+                foreach my $line (qx($cmd -S @paths 2>/dev/null)) {
+                    next unless $line =~ /^(.+?): \//;
+                    foreach my $name (split(/,\s*/, $1)) {
+                        $name =~ s{:.*$}{};
+                        $owners{$name} = 1;
+                    }
+                }
+            }
             foreach my $line (@output) {
                 if ($line =~ /^install ok installed/) {
                     $line =~ s{^.+?=}{}g;
                     push(@list, $line);
+                    if (%owners) {
+                        my($name, $version, $arch) = split(/\t/, $line);
+                        chomp($arch) if defined($arch);
+                        $running{"$name $version $arch"} = 1 if $owners{$name} and $arch;
+                    }
                 }
             }
             $data->{packages} = join("", sort(@list));
+            $data->{"running-kernel-pkgs"} = join(";", sort(keys(%running))) if %running;
             return;
         }
     }
@@ -614,6 +654,12 @@ information about the submitting machine:
 =item * C<kernel>: the current kernel
 
 =item * C<packager>: the packager (C<rpm> or C<dpkg>)
+
+=item * C<running-kernel-pkgs>: the installed packages owning the running
+kernel (C</lib/modules/$(uname -r)>, C</boot/vmlinuz-$(uname -r)>), as a list of
+I<NAME> I<VERSION> I<ARCH> entries separated by semicolons; the server uses it to
+ignore CVEs of kernel packages which are installed but not running. The header is
+omitted when the kernel files are not present (e.g. in containers)
 
 =item * C<site>: the site name (see the B<--site> option)
 
